@@ -26,7 +26,6 @@ const ASSUMPTIONS = {
   PRE_RETIREMENT_RETURN: 0.06,
   RETIREMENT_RETURN: 0.05,
   SAFE_WITHDRAWAL_RATE: 0.05,
-  LIFE_EXPECTANCY: 90,
 } as const;
 
 const InputField: React.FC<{
@@ -119,6 +118,7 @@ export default function RetirementCalculator() {
   });
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [showResults, setShowResults] = useState(false);
+  const [lifeExpectancy, setLifeExpectancy] = useState(90);
 
   const results = useMemo((): CalculationResults => {
     const {
@@ -163,10 +163,10 @@ export default function RetirementCalculator() {
       const withdrawalRate = desiredAnnualIncome / futureValueAtRetirement;
       if (!Number.isFinite(withdrawalRate) || withdrawalRate <= 0) {
         yearsUntilDepletion = Infinity;
-        runOutAge = ASSUMPTIONS.LIFE_EXPECTANCY;
+        runOutAge = lifeExpectancy;
       } else if (withdrawalRate < ASSUMPTIONS.RETIREMENT_RETURN) {
         yearsUntilDepletion = Infinity;
-        runOutAge = ASSUMPTIONS.LIFE_EXPECTANCY;
+        runOutAge = lifeExpectancy;
       } else {
         const ratio = withdrawalRate / ASSUMPTIONS.RETIREMENT_RETURN;
         yearsUntilDepletion =
@@ -178,7 +178,7 @@ export default function RetirementCalculator() {
       }
     } else if (desiredAnnualIncome <= projectedRetirementIncome) {
       yearsUntilDepletion = Infinity;
-      runOutAge = ASSUMPTIONS.LIFE_EXPECTANCY;
+      runOutAge = lifeExpectancy;
     }
 
     const isOnTrack =
@@ -244,11 +244,7 @@ export default function RetirementCalculator() {
     const ages = [];
     const balances = [];
 
-    for (
-      let age = inputs.currentAge;
-      age <= ASSUMPTIONS.LIFE_EXPECTANCY;
-      age++
-    ) {
+    for (let age = inputs.currentAge; age <= lifeExpectancy; age++) {
       if (age <= inputs.targetRetirementAge) {
         const yearsToRetirement = inputs.targetRetirementAge - age;
         const balance =
@@ -356,7 +352,7 @@ export default function RetirementCalculator() {
           },
         ]
       : []),
-    ...(results.runOutAge < ASSUMPTIONS.LIFE_EXPECTANCY
+    ...(results.runOutAge < lifeExpectancy
       ? [
           {
             label: "Funds Run Out At Age",
@@ -383,16 +379,30 @@ export default function RetirementCalculator() {
                   <span className="text-lg">←</span> Back to Step 1
                 </button>
               )}
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
-                Retirement Blueprint
-              </p>
-              <h1 className="mt-4 text-4xl font-bold leading-tight text-teal-900 md:text-5xl">
-                Build your personalized plan to long-term financial freedom.
-              </h1>
-              <p className="mt-4 text-lg text-teal-700 max-w-xl">
-                Enter your details to see how your retirement investments grow
-                and when your income can sustain your lifestyle.
-              </p>
+              {!showResults ? (
+                <>
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
+                    Retirement Blueprint
+                  </p>
+                  <h1 className="mt-4 text-4xl font-bold leading-tight text-teal-900 md:text-5xl">
+                    Build your personalized Retirement Blueprint to ensure
+                    long-term financial freedom.
+                  </h1>
+                  <p className="mt-4 text-lg text-teal-700 max-w-xl">
+                    Enter your details to see how your retirement investments
+                    grow and when your income can sustain your lifestyle.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
+                    Retirement Blueprint
+                  </p>
+                  <h1 className="mt-4 text-4xl font-bold leading-tight text-teal-900 md:text-5xl">
+                    Here's your personalized Retirement Blueprint results.
+                  </h1>
+                </>
+              )}
             </div>
             <div className="relative flex justify-center lg:justify-end">
               <img
@@ -478,7 +488,7 @@ export default function RetirementCalculator() {
                           investments?
                         </h3>
                         <InputField
-                          label="Current Retirement Investments"
+                          label="Current Retirement Investments (excluding primary residence)"
                           value={inputs.currentInvestments}
                           onChange={(value) =>
                             updateInput("currentInvestments", value)
@@ -581,7 +591,7 @@ export default function RetirementCalculator() {
                       step={1000}
                     />
                     <InputField
-                      label="Current Retirement Investments"
+                      label="Current Retirement Investments (excluding primary residence)"
                       value={inputs.currentInvestments}
                       onChange={(value) =>
                         updateInput("currentInvestments", value)
@@ -596,7 +606,7 @@ export default function RetirementCalculator() {
           </div>
 
           {showResults && (
-            <div className="mt-12 grid gap-8 lg:grid-cols-[1fr_1.2fr]">
+            <div className="mt-12 flex justify-center items-center">
               <div
                 className={`rounded-3xl border-2 p-6 ${
                   results.isOnTrack
@@ -625,7 +635,52 @@ export default function RetirementCalculator() {
                       }gap to reach your retirement goals.`}
                 </p>
               </div>
+            </div>
+          )}
 
+          {showResults && (
+            <div className="mt-10 grid gap-8 lg:grid-cols-[0.4fr_0.6fr]">
+              <div className="rounded-3xl border border-teal-200 bg-white p-6 shadow-lg">
+                <h2 className="text-2xl font-semibold text-teal-900">
+                  Assumptions Used
+                </h2>
+                <div className="mt-4 grid gap-3 text-sm">
+                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
+                    <span className="text-teal-800">Pre-Retirement Return</span>
+                    <span className="font-semibold text-teal-900">
+                      {(ASSUMPTIONS.PRE_RETIREMENT_RETURN * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
+                    <span className="text-teal-800">Retirement Return</span>
+                    <span className="font-semibold text-teal-900">
+                      {(ASSUMPTIONS.RETIREMENT_RETURN * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
+                    <span className="text-teal-800">Safe Withdrawal Rate</span>
+                    <span className="font-semibold text-teal-900">
+                      {(ASSUMPTIONS.SAFE_WITHDRAWAL_RATE * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
+                    <span className="text-teal-800">Life Expectancy</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={lifeExpectancy}
+                        onChange={(e) =>
+                          setLifeExpectancy(Number(e.target.value))
+                        }
+                        min={inputs.targetRetirementAge + 1}
+                        max={120}
+                        className="w-16 px-2 py-1 text-right font-semibold text-teal-900 border border-teal-200 rounded focus:outline-none focus:ring-2 focus:ring-teal-400"
+                      />
+                      <span className="font-semibold text-teal-900">years</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="rounded-3xl border border-teal-200 bg-white px-3 py-3 shadow-lg">
                 <h2 className="text-2xl font-semibold text-white bg-teal-900 rounded-t-2xl p-3">
                   Your Retirement Results
@@ -671,173 +726,48 @@ export default function RetirementCalculator() {
             </div>
           )}
 
-          {showResults && (
-            <div className="mt-10 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-3xl bg-teal-900 p-6 text-white shadow-xl">
-                <h2 className="mt-2 text-2xl font-semibold">
-                  Retirement Timeline
-                </h2>
-                <div className="mt-4 rounded-2xl bg-white/10 p-4">
-                  {/* Mobile view - simplified timeline */}
-                  <div className="md:hidden relative h-56 overflow-x-auto">
-                    <div className="absolute inset-0 flex items-end justify-between gap-1 min-w-max">
-                      {timelineData.ages.map((age, index) => {
-                        const balance = timelineData.balances[index];
-                        const height = (balance / maxBalance) * 100;
-                        const isRetirementAge =
-                          age === inputs.targetRetirementAge;
-                        const isRunOutAge =
-                          age === Math.floor(results.runOutAge) &&
-                          results.runOutAge < ASSUMPTIONS.LIFE_EXPECTANCY;
-
-                        // Show every 3rd age on mobile, plus important markers
-                        const shouldShow =
-                          age % 3 === 0 || isRetirementAge || isRunOutAge;
-
-                        if (!shouldShow) return null;
-
-                        return (
-                          <div
-                            key={age}
-                            className="flex flex-1 flex-col items-center min-w-[25px]"
-                          >
-                            <div
-                              className={`w-full rounded-t transition-all duration-300 ${
-                                balance > 0
-                                  ? results.isOnTrack
-                                    ? "bg-green-400"
-                                    : "bg-sky-400"
-                                  : "bg-red-400"
-                              } ${isRetirementAge ? "ring-2 ring-orange-400" : ""}`}
-                              style={{ height: `${height}%` }}
-                            />
-                            <div className="text-[9px] mt-1 text-white/80 whitespace-nowrap">
-                              {age % 6 === 0 || isRetirementAge || isRunOutAge
-                                ? age
-                                : ""}
-                            </div>
-                            {isRetirementAge && (
-                              <div className="text-[9px] text-orange-200 mt-1 whitespace-nowrap">
-                                Retire
-                              </div>
-                            )}
-                            {isRunOutAge && (
-                              <div className="text-[9px] text-red-200 mt-1 whitespace-nowrap">
-                                Depleted
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Desktop view - full timeline */}
-                  <div className="hidden md:block relative h-56">
-                    <div className="absolute inset-0 flex items-end justify-between gap-1">
-                      {timelineData.ages.map((age, index) => {
-                        const balance = timelineData.balances[index];
-                        const height = (balance / maxBalance) * 100;
-                        const isRetirementAge =
-                          age === inputs.targetRetirementAge;
-                        const isRunOutAge =
-                          age === Math.floor(results.runOutAge) &&
-                          results.runOutAge < ASSUMPTIONS.LIFE_EXPECTANCY;
-
-                        return (
-                          <div
-                            key={age}
-                            className="flex flex-1 flex-col items-center"
-                          >
-                            <div
-                              className={`w-full rounded-t transition-all duration-300 ${
-                                balance > 0
-                                  ? results.isOnTrack
-                                    ? "bg-green-400"
-                                    : "bg-sky-400"
-                                  : "bg-red-400"
-                              } ${isRetirementAge ? "ring-2 ring-orange-400" : ""}`}
-                              style={{ height: `${height}%` }}
-                            />
-                            <div className="text-[10px] mt-1 text-white/80">
-                              {age % 5 === 0 || isRetirementAge || isRunOutAge
-                                ? age
-                                : ""}
-                            </div>
-                            {isRetirementAge && (
-                              <div className="text-[10px] text-orange-200 mt-1">
-                                Retirement
-                              </div>
-                            )}
-                            {isRunOutAge && (
-                              <div className="text-[10px] text-red-200 mt-1">
-                                Depleted
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-4 text-xs text-white/80">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-sky-400" />
-                      Investment Growth
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-orange-400" />
-                      Retirement Age
-                    </div>
-                    {results.runOutAge < ASSUMPTIONS.LIFE_EXPECTANCY && (
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-red-400" />
-                        Funds Depleted
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRestart}
-                  className="mt-6 rounded-full border border-white/60 px-5 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                >
-                  Back to Step 1
-                </button>
-              </div>
-
-              <div className="rounded-3xl border border-teal-200 bg-white p-6 shadow-lg">
-                <h2 className="text-2xl font-semibold text-teal-900">
-                  Assumptions Used
-                </h2>
-                <div className="mt-4 grid gap-3 text-sm">
-                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
-                    <span className="text-teal-800">Pre-Retirement Return</span>
-                    <span className="font-semibold text-teal-900">
-                      {(ASSUMPTIONS.PRE_RETIREMENT_RETURN * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
-                    <span className="text-teal-800">Retirement Return</span>
-                    <span className="font-semibold text-teal-900">
-                      {(ASSUMPTIONS.RETIREMENT_RETURN * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
-                    <span className="text-teal-800">Safe Withdrawal Rate</span>
-                    <span className="font-semibold text-teal-900">
-                      {(ASSUMPTIONS.SAFE_WITHDRAWAL_RATE * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-teal-100 bg-teal-50 px-4 py-3">
-                    <span className="text-teal-800">Life Expectancy</span>
-                    <span className="font-semibold text-teal-900">
-                      {ASSUMPTIONS.LIFE_EXPECTANCY} years
-                    </span>
-                  </div>
-                </div>
+          {/* Disclaimer */}
+          <div className="mt-32 pb-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="p-6 text-black">
+                <p className="mb-3">
+                  Disclaimer: This retirement calculator is provided for
+                  educational and illustrative purposes only. Results are based
+                  on user inputs and assumptions that may not reflect actual
+                  future performance, market conditions, tax laws, or personal
+                  circumstances. The projections and outputs generated are not
+                  guarantees of future results and should not be relied upon as
+                  financial, investment, tax, or legal advice.
+                </p>
+                <p className="mb-3">
+                  Use of this calculator does not create an advisor client
+                  relationship, and we make no representations or warranties as
+                  to the accuracy or completeness of the information provided.
+                </p>
+                <p className="mb-3">
+                  We are not attorneys, investment advisors, accountants, tax
+                  professionals or financial advisors and any of the content
+                  presented should not be taken as professional advice. We
+                  recommend seeking the advice of a financial professional
+                  before making any investment decision, and we accept no
+                  liability whatsoever for any loss or damage you may incur. We
+                  urge you to perform your own due diligence and seek the advice
+                  of your own professional before making any investment.
+                </p>
+                <p>
+                  For a complete list of Disclosures{" "}
+                  <a
+                    href="https://elevestcapital.com/disclosures"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline font-bold"
+                  >
+                    CLICK HERE
+                  </a>
+                </p>
               </div>
             </div>
-          )}
+          </div>
           <style jsx global>{`
             @keyframes stepFade {
               from {
