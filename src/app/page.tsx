@@ -345,7 +345,7 @@ export default function RetirementCalculator() {
     ...(results.yearsUntilDepletion !== Infinity
       ? [
           {
-            label: "Years Until Depletion",
+            label: "Age I will Run Out of Money",
             value: Number(results.yearsUntilDepletion.toFixed(1)),
             type: "number" as const,
             color: "red" as const,
@@ -689,9 +689,9 @@ export default function RetirementCalculator() {
                   {[leftResults, rightResults].map((table, tableIndex) => (
                     <div
                       key={tableIndex}
-                      className="rounded-2xl border border-orange-200 p-4"
+                      className="rounded-2xl border border-orange-200 p-3"
                     >
-                      <div className="mb-3 text-sm font-semibold text-teal-800">
+                      <div className="p-3 mb-3 font-semibold text-white bg-teal-900 rounded-t-xl">
                         {tableIndex === 0
                           ? "Retirement Summary"
                           : "Funding Detail"}
