@@ -342,16 +342,16 @@ export default function RetirementCalculator() {
           },
         ]
       : []),
-    ...(results.yearsUntilDepletion !== Infinity
-      ? [
-          {
-            label: "Age I will Run Out of Money",
-            value: Number(results.yearsUntilDepletion.toFixed(1)),
-            type: "number" as const,
-            color: "red" as const,
-          },
-        ]
-      : []),
+    // ...(results.yearsUntilDepletion !== Infinity
+    //   ? [
+    //       {
+    //         label: "Age I will Run Out of Money",
+    //         value: Number(results.yearsUntilDepletion.toFixed(1)),
+    //         type: "number" as const,
+    //         color: "red" as const,
+    //       },
+    //     ]
+    //   : []),
     ...(results.runOutAge < lifeExpectancy
       ? [
           {
