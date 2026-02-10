@@ -361,7 +361,14 @@ export default function RetirementCalculator() {
             color: "red" as const,
           },
         ]
-      : []),
+      : [
+          {
+            label: "Funds Run Out At Age",
+            value: Number(results.runOutAge.toFixed(0)),
+            type: "number" as const,
+            color: "red" as const,
+          },
+        ]),
   ];
 
   return (
