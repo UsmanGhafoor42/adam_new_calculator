@@ -153,32 +153,15 @@ export default function RetirementCalculator() {
       desiredAnnualIncome - projectedRetirementIncome,
     );
 
-    let yearsUntilDepletion = 0;
-    let runOutAge = targetRetirementAge;
+    let yearsUntilDepletion = Infinity;
+    let runOutAge = lifeExpectancy;
 
     if (
       futureValueAtRetirement > 0 &&
       desiredAnnualIncome > projectedRetirementIncome
     ) {
-      const withdrawalRate = desiredAnnualIncome / futureValueAtRetirement;
-      if (!Number.isFinite(withdrawalRate) || withdrawalRate <= 0) {
-        yearsUntilDepletion = Infinity;
-        runOutAge = lifeExpectancy;
-      } else if (withdrawalRate < ASSUMPTIONS.RETIREMENT_RETURN) {
-        yearsUntilDepletion = Infinity;
-        runOutAge = lifeExpectancy;
-      } else {
-        const ratio = withdrawalRate / ASSUMPTIONS.RETIREMENT_RETURN;
-        yearsUntilDepletion =
-          ratio >= 1
-            ? futureValueAtRetirement / Math.max(annualDeficit, 1)
-            : Math.log(1 / (1 - ratio)) /
-              Math.log(1 + ASSUMPTIONS.RETIREMENT_RETURN);
-        runOutAge = targetRetirementAge + yearsUntilDepletion;
-      }
-    } else if (desiredAnnualIncome <= projectedRetirementIncome) {
-      yearsUntilDepletion = Infinity;
-      runOutAge = lifeExpectancy;
+      yearsUntilDepletion = futureValueAtRetirement / desiredAnnualIncome;
+      runOutAge = targetRetirementAge + yearsUntilDepletion;
     }
 
     const isOnTrack =
@@ -196,7 +179,7 @@ export default function RetirementCalculator() {
       runOutAge,
       isOnTrack,
     };
-  }, [inputs]);
+  }, [inputs, lifeExpectancy]);
 
   const updateInput = (field: keyof CalculatorInputs, value: number) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
@@ -243,7 +226,6 @@ export default function RetirementCalculator() {
   const timelineData = useMemo(() => {
     const ages = [];
     const balances = [];
-
     for (let age = inputs.currentAge; age <= lifeExpectancy; age++) {
       if (age <= inputs.targetRetirementAge) {
         const yearsToRetirement = inputs.targetRetirementAge - age;
@@ -262,37 +244,23 @@ export default function RetirementCalculator() {
         if (retirementStartBalance <= 0) {
           ages.push(age);
           balances.push(0);
-        } else if (results.yearsUntilDepletion === Infinity) {
-          const balance =
-            retirementStartBalance *
-            Math.pow(
-              1 +
-                ASSUMPTIONS.RETIREMENT_RETURN -
-                results.projectedRetirementIncome / retirementStartBalance,
-              yearsInRetirement,
-            );
-          ages.push(age);
-          balances.push(Math.max(0, balance));
-        } else if (yearsInRetirement <= results.yearsUntilDepletion) {
-          const balance =
-            retirementStartBalance *
-            Math.pow(
-              1 +
-                ASSUMPTIONS.RETIREMENT_RETURN -
-                inputs.desiredAnnualIncome / retirementStartBalance,
-              yearsInRetirement,
-            );
-          ages.push(age);
-          balances.push(Math.max(0, balance));
         } else {
+          const balance =
+            yearsInRetirement > results.yearsUntilDepletion
+              ? 0
+              : Math.max(
+                  0,
+                  retirementStartBalance -
+                    inputs.desiredAnnualIncome * yearsInRetirement,
+                );
           ages.push(age);
-          balances.push(0);
+          balances.push(balance);
         }
       }
     }
 
     return { ages, balances };
-  }, [inputs, results]);
+  }, [inputs, results, lifeExpectancy]);
 
   const maxBalance = Math.max(...timelineData.balances, 1);
 
