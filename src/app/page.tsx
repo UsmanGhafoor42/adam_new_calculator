@@ -153,19 +153,16 @@ export default function RetirementCalculator() {
       desiredAnnualIncome - projectedRetirementIncome,
     );
 
-    let yearsUntilDepletion = Infinity;
-    let runOutAge = lifeExpectancy;
+    const yearsUntilDepletion =
+      desiredAnnualIncome > 0
+        ? futureValueAtRetirement / desiredAnnualIncome
+        : Infinity;
+    const runOutAge =
+      desiredAnnualIncome > 0
+        ? targetRetirementAge + yearsUntilDepletion
+        : targetRetirementAge;
 
-    if (
-      futureValueAtRetirement > 0 &&
-      desiredAnnualIncome > projectedRetirementIncome
-    ) {
-      yearsUntilDepletion = futureValueAtRetirement / desiredAnnualIncome;
-      runOutAge = targetRetirementAge + yearsUntilDepletion;
-    }
-
-    const isOnTrack =
-      incomeSurplusOrShortfall >= 0 && yearsUntilDepletion === Infinity;
+    const isOnTrack = incomeSurplusOrShortfall >= 0;
 
     return {
       yearsToRetirement,
@@ -179,7 +176,7 @@ export default function RetirementCalculator() {
       runOutAge,
       isOnTrack,
     };
-  }, [inputs, lifeExpectancy]);
+  }, [inputs]);
 
   const updateInput = (field: keyof CalculatorInputs, value: number) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
@@ -320,23 +317,12 @@ export default function RetirementCalculator() {
     //       },
     //     ]
     //   : []),
-    ...(results.runOutAge < lifeExpectancy
-      ? [
-          {
-            label: "Funds Run Out At Age",
-            value: Number(results.runOutAge.toFixed(0)),
-            type: "number" as const,
-            color: "red" as const,
-          },
-        ]
-      : [
-          {
-            label: "Funds Run Out At Age",
-            value: Number(results.runOutAge.toFixed(0)),
-            type: "number" as const,
-            color: "red" as const,
-          },
-        ]),
+    {
+      label: "Funds Run Out At Age",
+      value: Number(results.runOutAge.toFixed(0)),
+      type: "number" as const,
+      color: "red" as const,
+    },
   ];
 
   return (
